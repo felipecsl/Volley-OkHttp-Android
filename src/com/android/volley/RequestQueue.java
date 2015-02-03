@@ -296,18 +296,14 @@ public class RequestQueue {
             }
 
             if (!request.isJoined()) {
-                // If the request is single response, skip cache if network is required.
-                if (request.getReturnStrategy() == ReturnStrategy.SINGLE && !mCacheDispatcher.willSkipNetwork(request)) {
-                    processNetworkRequest(request);
-                } else {
-                    mCacheQueue.add(request);
-                }
 
                 // If the request is uncacheable, skip the cache queue and go straight to the network.
                 if (request.getReturnStrategy() == ReturnStrategy.NETWORK_ONLY) {
                     processNetworkRequest(request);
                     return request;
                 }
+
+                mCacheQueue.add(request);
             }
 
             return request;
