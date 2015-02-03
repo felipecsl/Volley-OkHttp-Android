@@ -274,12 +274,6 @@ public class RequestQueue {
         request.setSequence(getSequenceNumber());
         request.addMarker("add-to-queue");
 
-        // If the request is uncacheable, skip the cache queue and go straight to the network.
-        if (request.getReturnStrategy() == ReturnStrategy.NETWORK_ONLY) {
-            processNetworkRequest(request);
-            return request;
-        }
-
         // Insert request into stage if there's already a request with the same cache key in flight.
         synchronized (mWaitingRequests) {
             String cacheKey = request.getCacheKey();
@@ -301,7 +295,20 @@ public class RequestQueue {
                 mWaitingRequests.put(cacheKey, null);
             }
 
-            mCacheQueue.add(request);
+            if (!request.isJoined()) {
+                // If the request is single response, skip cache if network is required.
+                if (request.getReturnStrategy() == ReturnStrategy.SINGLE && !mCacheDispatcher.willSkipNetwork(request)) {
+                    processNetworkRequest(request);
+                } else {
+                    mCacheQueue.add(request);
+                }
+
+                // If the request is uncacheable, skip the cache queue and go straight to the network.
+                if (request.getReturnStrategy() == ReturnStrategy.NETWORK_ONLY) {
+                    processNetworkRequest(request);
+                    return request;
+                }
+            }
 
             return request;
         }
@@ -345,10 +352,17 @@ public class RequestQueue {
         return mCacheDispatcher.willMissCache(request);
     }
 
+    public boolean willSkipNetwork(Request request) {
+        return mCacheDispatcher.willSkipNetwork(request);
+    }
+
     public void expireCache(Request request) {
         mCacheDispatcher.expireCache(request);
     }
 
+    public void expireSoftCache(Request request) {
+        mCacheDispatcher.expireSoftCache(request);
+    }
     /**
      * @param request a request to process on the network
      * @return true if this request was processed on the dedicated high-priority dispatcher

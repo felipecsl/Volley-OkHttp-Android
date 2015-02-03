@@ -142,7 +142,9 @@ public class CacheDispatcher extends Thread {
                     request.addMarker("cache-hit-refresh-needed");
                     request.setCacheEntry(entry);
 
-                    if (request.getReturnStrategy() == ReturnStrategy.CACHE_IF_NETWORK_FAILS) {
+                    if (request.getReturnStrategy() == ReturnStrategy.CACHE_IF_NETWORK_FAILS
+                            || request.getReturnStrategy() == ReturnStrategy.SINGLE) {
+                        // todo this is a bad memory inefficient pattern
                         request.mCacheResponse = response;
                         request.addMarker("cache-error-delivery-response-set");
                         mNetworkQueue.processNetworkRequest(request);
@@ -177,10 +179,23 @@ public class CacheDispatcher extends Thread {
         return entry == null || entry.isExpired();
     }
 
+    public boolean willSkipNetwork(Request request) {
+        Cache.Entry entry = mCache.getHeaders(request.getCacheKey());
+        return entry != null && !entry.refreshNeeded();
+    }
+
     public void expireCache(Request request) {
         Cache.Entry entry = mCache.getHeaders(request.getCacheKey());
         if (entry != null) {
             entry.expireCache();
+            mCache.updateEntry(request.getCacheKey(), entry);
+        }
+    }
+
+    public void expireSoftCache(Request request) {
+        Cache.Entry entry = mCache.getHeaders(request.getCacheKey());
+        if (entry != null) {
+            entry.expireSoftCache();
             mCache.updateEntry(request.getCacheKey(), entry);
         }
     }

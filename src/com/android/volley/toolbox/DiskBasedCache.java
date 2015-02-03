@@ -260,6 +260,7 @@ public class DiskBasedCache implements Cache {
     private void updateEntrySynchronous(String key, Entry entry) {
         Entry cachedEntry = get(key);
         entry.data = cachedEntry.data;
+        entry.responseHeaders = cachedEntry.responseHeaders;
         put(key, entry, true);
     }
 
@@ -471,6 +472,9 @@ public class DiskBasedCache implements Cache {
             e.ttl = ttl;
             e.softTtl = softTtl;
             e.responseHeaders = responseHeaders;
+
+            e.responseHeaders.put(Entry.KEY_CACHED_TTL, String.valueOf(e.ttl));
+            e.responseHeaders.put(Entry.KEY_CACHED_SOFTTTL, String.valueOf(e.softTtl));
             return e;
         }
 

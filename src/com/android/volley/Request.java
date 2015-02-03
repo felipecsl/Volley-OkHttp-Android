@@ -69,10 +69,12 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      * Supported request methods.
      */
     public enum ReturnStrategy {
-        DOUBLE, // You'll get called back into twice, once for cached result and once for network delivery
         NETWORK_IF_NO_CACHE, // You'll get the network response only if the cache misses
         CACHE_IF_NETWORK_FAILS, // You'll get the cached response only if the network errors / fails
-        NETWORK_ONLY // Skip the cache
+        NETWORK_ONLY, // Skip the cache
+        // END LEGACY RETURN STRATEGIES
+        DOUBLE, // You'll get called back into up to twice, once for cached result and once for network delivery
+        SINGLE // guarantees that response will be called only once
     }
 
     /** An event log tracing the lifetime of this request; for debugging. */
@@ -695,7 +697,11 @@ public abstract class Request<T> implements Comparable<Request<T>> {
         mJoined = joined;
     }
 
-    public void expireCache() {
-        // no - op
+    public Request<?> expireCache() {
+        return this;
+    }
+
+    public Request<?> expireSoftCache() {
+        return this;
     }
 }
