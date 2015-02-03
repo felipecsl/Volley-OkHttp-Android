@@ -132,8 +132,6 @@ public class NetworkDispatcher extends Thread {
                 Response<?> response = request.parseNetworkResponse(networkResponse);
                 request.addMarker("network-parse-complete");
 
-
-
                 // Write to cache if applicable.
                 // TODO: Only update cache metadata instead of entire record for 304s.
                 if (request.shouldCache() && response.cacheEntry != null) {
@@ -142,20 +140,20 @@ public class NetworkDispatcher extends Thread {
                 }
 
                 // Post the response back.
-                if (request.hasHadResponseDelivered() && request.getReturnStrategy() == ReturnStrategy.NETWORK_IF_NO_CACHE) {
+                if (request.hasHadResponseDelivered() && (request.getReturnStrategy() == ReturnStrategy.NETWORK_IF_NO_CACHE || request.getReturnStrategy() == ReturnStrategy.SINGLE)) {
                     request.cancel();
                 }
                 request.markDelivered();
                 mDelivery.postResponse(request, response);
             } catch (VolleyError volleyError) {
-                if (request.hasHadResponseDelivered() && request.getReturnStrategy() == ReturnStrategy.NETWORK_IF_NO_CACHE) {
+                if (request.hasHadResponseDelivered() && (request.getReturnStrategy() == ReturnStrategy.NETWORK_IF_NO_CACHE || request.getReturnStrategy() == ReturnStrategy.SINGLE)) {
                     continue;
                 }
                 volleyError.setNetworkTimeMs(SystemClock.elapsedRealtime() - startTimeMs);
                 parseAndDeliverNetworkError(request, volleyError);
             } catch (Exception e) {
                 VolleyLog.e(e, "Unhandled exception %s", e.toString());
-                if (request.hasHadResponseDelivered() && request.getReturnStrategy() == ReturnStrategy.NETWORK_IF_NO_CACHE) {
+                if (request.hasHadResponseDelivered() && (request.getReturnStrategy() == ReturnStrategy.NETWORK_IF_NO_CACHE || request.getReturnStrategy() == ReturnStrategy.SINGLE)) {
                     continue;
                 }
                 VolleyError volleyError = new VolleyError(e);
