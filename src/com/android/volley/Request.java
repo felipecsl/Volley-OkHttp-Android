@@ -74,7 +74,8 @@ public abstract class Request<T> implements Comparable<Request<T>> {
         NETWORK_ONLY, // Skip the cache
         // END LEGACY RETURN STRATEGIES
         DOUBLE, // You'll get called back into up to twice, once for cached result and once for network delivery
-        SINGLE // guarantees that response will be called only once
+        SINGLE // guarantees that response will be called only once. exact behavior depends on caching.
+        // if it can skip network it returns cache, otehrwise it tries to fetch network and returns cache if network fails
     }
 
     /** An event log tracing the lifetime of this request; for debugging. */
@@ -703,5 +704,23 @@ public abstract class Request<T> implements Comparable<Request<T>> {
 
     public Request<?> expireSoftCache() {
         return this;
+    }
+
+    /**
+     * Milliseconds to live in cache
+     *
+     * @return
+     */
+    public long getTTL() {
+        return 0;
+    }
+
+    /**
+     * Milliseconds to be considered 'fresh' in cache
+     *
+     * @return
+     */
+    public long getSoftTTL() {
+        return 0;
     }
 }

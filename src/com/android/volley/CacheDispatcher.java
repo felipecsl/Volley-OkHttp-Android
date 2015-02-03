@@ -133,8 +133,20 @@ public class CacheDispatcher extends Thread {
                     // deliver cached response.
                     mDelivery.postResponse(request, response);
                 } else if (!entry.refreshNeeded()) {
-                    // Completely unexpired cache hit. Just deliver the response.
-                    mDelivery.postResponse(request, response);
+                    if (entry.softTtl - System.currentTimeMillis() < request.getSoftTTL() / 2) {
+                        // caching 50% over so lets warm the cache
+                        // Post the intermediate response back to the user and have
+                        // the delivery then forward the request along to the network.
+                        mDelivery.postResponse(request, response, new Runnable() {
+                            @Override
+                            public void run() {
+                                mNetworkQueue.processNetworkRequest(request);
+                            }
+                        });
+                    } else {
+                        // Completely unexpired cache hit. Just deliver the response.
+                        mDelivery.postResponse(request, response);
+                    }
                 } else {
                     // Soft-expired cache hit. We can deliver the cached response,
                     // but we need to also send the request to the network for
@@ -152,7 +164,7 @@ public class CacheDispatcher extends Thread {
                         
                         // Mark the response as intermediate.
                         response.intermediate = true;
-                        
+
                         // Post the intermediate response back to the user and have
                         // the delivery then forward the request along to the network.
                         mDelivery.postResponse(request, response, new Runnable() {
